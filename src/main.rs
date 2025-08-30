@@ -48,7 +48,7 @@ struct Literals {
 struct Problem {
     name: String,
     start: Sort,
-    args: Vars,
+    args: Vec<(String, Sort)>,
     literals: Literals,
     rules: Rules,
     examples: Vec<(Vec<String>, String)>,
@@ -64,7 +64,7 @@ fn main() {
     let mut name = String::from("");
     let mut rules = Rules::default();
     let mut start: Option<Sort> = None;
-    let mut fun_args = Vars::default();
+    let mut fun_args = Vec::<(String, Sort)>::new();
     let mut examples = Vec::<(Vec<String>, String)>::new();
     let mut has_seen_synth_fun = false;
     let mut function_name = String::new();
@@ -152,11 +152,7 @@ fn main() {
                 }
                 has_seen_synth_fun = true;
                 for SortedVar { name, sort } in args {
-                    match parse_sort(sort) {
-                        Sort::Int => fun_args.int.push(name),
-                        Sort::Bool => fun_args.bool.push(name),
-                        Sort::String => fun_args.string.push(name),
-                    }
+		    fun_args.push((name, parse_sort(sort)));
                 }
 
                 start = Some(parse_sort(sort));
@@ -178,13 +174,9 @@ fn main() {
                         match term.clone() {
                             SyGuSTerm::Identifier(identifier) => {
                                 let name = identifier.to_string();
-                                let is_var = match sort {
-                                    Sort::String => fun_args.string.contains(&name),
-                                    Sort::Int => fun_args.int.contains(&name),
-                                    Sort::Bool => fun_args.bool.contains(&name),
-                                };
 
-                                if is_var {
+                                if fun_args.iter().any(|(arg_name, _)| *arg_name == name) {
+				    // todo: type comparison
                                     continue;
                                 }
 
